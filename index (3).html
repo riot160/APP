@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ALMEER // SYSTEM ACCESS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #00ff41;
+      --green-dim: #00b32c;
+      --green-dark: #003b0e;
+      --green-glow: rgba(0,255,65,0.15);
+      --bg: #000000;
+      --red: #ff003c;
+      --amber: #ffb300;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--green);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scanlines */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* CRT vignette */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.75) 100%);
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    /* Matrix canvas */
+    #matrix {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0.18;
+      z-index: 0;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 36px;
+      border-bottom: 1px solid var(--green-dark);
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+
+    .nav-logo {
+      font-family: 'VT323', monospace;
+      font-size: 1.6rem;
+      letter-spacing: 6px;
+      color: var(--green);
+      text-shadow: 0 0 10px var(--green), 0 0 30px rgba(0,255,65,0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--green-dim);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      transition: color 0.2s, text-shadow 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--green);
+      text-shadow: 0 0 8px var(--green);
+    }
+
+    .nav-status {
+      font-size: 0.72rem;
+      color: var(--green-dim);
+      letter-spacing: 1px;
+    }
+
+    .blink { animation: blink 1s step-end infinite; }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+    /* HERO */
+    .hero {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 80px 20px 40px;
+      text-align: center;
+    }
+
+    .glitch-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .glitch {
+      font-family: 'VT323', monospace;
+      font-size: clamp(5rem, 16vw, 11rem);
+      letter-spacing: 0.2em;
+      color: var(--green);
+      text-shadow:
+        0 0 10px var(--green),
+        0 0 40px rgba(0,255,65,0.4),
+        0 0 80px rgba(0,255,65,0.15);
+      position: relative;
+      display: inline-block;
+      animation: glitch-flicker 6s infinite;
+    }
+
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+
+    .glitch::before {
+      color: var(--red);
+      animation: glitch-top 3s infinite;
+      clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+      transform: translate(-3px, -2px);
+      opacity: 0;
+    }
+
+    .glitch::after {
+      color: #00d4ff;
+      animation: glitch-bottom 3s infinite;
+      clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+      transform: translate(3px, 2px);
+      opacity: 0;
+    }
+
+    @keyframes glitch-top {
+      0%,90%,100% { opacity:0; transform: translate(-3px,-2px); }
+      91% { opacity:1; transform: translate(-6px,-2px); }
+      93% { opacity:1; transform: translate(4px,-2px); }
+      95% { opacity:0; }
+    }
+
+    @keyframes glitch-bottom {
+      0%,90%,100% { opacity:0; transform: translate(3px,2px); }
+      92% { opacity:1; transform: translate(6px,3px); }
+      94% { opacity:1; transform: translate(-4px,2px); }
+      96% { opacity:0; }
+    }
+
+    @keyframes glitch-flicker {
+      0%,98%,100% { opacity:1; }
+      99% { opacity:0.85; }
+    }
+
+    .hero-sub {
+      font-size: 0.85rem;
+      letter-spacing: 6px;
+      color: var(--green-dim);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .hero-tagline {
+      font-size: 0.78rem;
+      color: #005a14;
+      letter-spacing: 2px;
+      margin-bottom: 40px;
+    }
+
+    /* ACCESS BUTTON */
+    .btn-access {
+      display: inline-block;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--green);
+      border: none;
+      padding: 14px 40px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+
+    .btn-access:hover {
+      background: #00e639;
+      box-shadow: 0 0 20px rgba(0,255,65,0.5), 0 0 60px rgba(0,255,65,0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn-access:active { transform: translateY(0); }
+
+    /* TERMINAL */
+    .terminal {
+      width: min(700px, 92vw);
+      margin: 0 auto 60px;
+      border: 1px solid var(--green-dark);
+      background: rgba(0, 10, 2, 0.92);
+      position: relative;
+      z-index: 10;
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--green-dark);
+      background: rgba(0,255,65,0.05);
+    }
+
+    .t-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    .t-dot.red   { background: #ff5f57; box-shadow: 0 0 4px #ff5f57; }
+    .t-dot.amber { background: #febc2e; box-shadow: 0 0 4px #febc2e; }
+    .t-dot.green { background: #28c840; box-shadow: 0 0 4px #28c840; }
+
+    .t-title {
+      font-size: 0.72rem;
+      color: var(--green-dim);
+      letter-spacing: 2px;
+      margin-left: 8px;
+    }
+
+    .terminal-body {
+      padding: 20px 24px;
+      min-height: 240px;
+      font-size: 0.82rem;
+      line-height: 1.8;
+    }
+
+    .t-line { display: block; white-space: pre-wrap; word-break: break-all; }
+    .t-prompt { color: var(--green); }
+    .t-cmd { color: #e0e0e0; }
+    .t-output { color: var(--green-dim); }
+    .t-success { color: var(--green); }
+    .t-warn { color: var(--amber); }
+    .t-err { color: var(--red); }
+    .t-dim { color: #003b0e; }
+    .t-cursor {
+      display: inline-block;
+      width: 8px; height: 14px;
+      background: var(--green);
+      vertical-align: middle;
+      animation: blink 0.9s step-end infinite;
+    }
+
+    /* STATS GRID */
+    .stats {
+      position: relative;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1px;
+      width: min(900px, 92vw);
+      margin: 0 auto 80px;
+      border: 1px solid var(--green-dark);
+    }
+
+    .stat-box {
+      background: rgba(0,10,2,0.92);
+      padding: 28px 24px;
+      border-right: 1px solid var(--green-dark);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-box:last-child { border-right: none; }
+
+    .stat-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 2px;
+      background: var(--green);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+
+    .stat-box:hover::before { transform: scaleX(1); }
+    .stat-box:hover { background: rgba(0,255,65,0.03); }
+
+    .stat-label {
+      font-size: 0.68rem;
+      letter-spacing: 3px;
+      color: #005a14;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-family: 'VT323', monospace;
+      font-size: 2.8rem;
+      color: var(--green);
+      text-shadow: 0 0 12px rgba(0,255,65,0.4);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .stat-sub {
+      font-size: 0.7rem;
+      color: var(--green-dim);
+      letter-spacing: 1px;
+    }
+
+    /* SECTION TITLES */
+    .section-title {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      font-family: 'VT323', monospace;
+      font-size: 1.6rem;
+      letter-spacing: 8px;
+      color: var(--green-dim);
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    .section-title span {
+      color: var(--green);
+      text-shadow: 0 0 8px rgba(0,255,65,0.5);
+    }
+
+    /* PROJECTS */
+    .projects {
+      position: relative;
+      z-index: 10;
+      width: min(900px, 92vw);
+      margin: 0 auto 80px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .project-card {
+      border: 1px solid var(--green-dark);
+      background: rgba(0,10,2,0.92);
+      padding: 24px;
+      position: relative;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .project-card:hover {
+      border-color: var(--green-dim);
+      background: rgba(0,255,65,0.04);
+    }
+
+    .project-tag {
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: var(--bg);
+      background: var(--green-dim);
+      padding: 3px 10px;
+      display: inline-block;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+
+    .project-name {
+      font-family: 'VT323', monospace;
+      font-size: 1.5rem;
+      color: var(--green);
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+    }
+
+    .project-desc {
+      font-size: 0.75rem;
+      color: var(--green-dim);
+      line-height: 1.7;
+    }
+
+    .project-arrow {
+      position: absolute;
+      bottom: 20px; right: 20px;
+      font-size: 1.2rem;
+      color: var(--green-dark);
+      transition: color 0.2s;
+    }
+
+    .project-card:hover .project-arrow { color: var(--green); }
+
+    /* FOOTER */
+    footer {
+      position: relative;
+      z-index: 10;
+      border-top: 1px solid var(--green-dark);
+      padding: 28px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      color: #003b0e;
+    }
+
+    footer span { color: var(--green-dim); }
+
+    /* SCROLL REVEAL */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s, transform 0.6s; }
+    .revealed { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 600px) {
+      nav { padding: 12px 18px; }
+      .nav-links { gap: 18px; }
+      .nav-links a { font-size: 0.7rem; letter-spacing: 2px; }
+      .nav-status { display: none; }
+      footer { flex-direction: column; gap: 10px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<nav>
+  <div class="nav-logo">ALMEER</div>
+  <ul class="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-status">SYS:<span style="color:var(--green)">ONLINE</span> <span class="blink">■</span></div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <p class="hero-sub">// INITIALIZING SYSTEM</p>
+  <div class="glitch-wrap">
+    <h1 class="glitch" data-text="ALMEER">ALMEER</h1>
+  </div>
+  <p class="hero-sub" style="margin-top:8px">UNAUTHORIZED ACCESS PROHIBITED</p>
+  <p class="hero-tagline">[ SYSTEM BREACH PROTOCOL v4.1.9 ACTIVE ]</p>
+  <button class="btn-access" onclick="triggerAccess()">REQUEST ACCESS</button>
+</section>
+
+<!-- TERMINAL -->
+<div class="terminal reveal" id="about">
+  <div class="terminal-header">
+    <div class="t-dot red"></div>
+    <div class="t-dot amber"></div>
+    <div class="t-dot green"></div>
+    <span class="t-title">almeer@root:~$</span>
+  </div>
+  <div class="terminal-body" id="terminal-out">
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats reveal">
+  <div class="stat-box">
+    <div class="stat-label">Systems Breached</div>
+    <div class="stat-value" id="s1">000</div>
+    <div class="stat-sub">TOTAL TARGETS</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">Uptime</div>
+    <div class="stat-value" id="s2">99.9<span style="font-size:1.2rem">%</span></div>
+    <div class="stat-sub">RELIABILITY INDEX</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">Encrypted Ops</div>
+    <div class="stat-value" id="s3">000</div>
+    <div class="stat-sub">ACTIVE MISSIONS</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">Threat Level</div>
+    <div class="stat-value" style="color:var(--red);text-shadow:0 0 12px rgba(255,0,60,0.5)">9</div>
+    <div class="stat-sub">MAXIMUM</div>
+  </div>
+</div>
+
+<!-- PROJECTS -->
+<p class="section-title reveal" id="projects">// <span>ACTIVE</span> OPERATIONS</p>
+
+<div class="projects reveal">
+  <div class="project-card">
+    <div class="project-tag">Exploit</div>
+    <div class="project-name">PHANTOM</div>
+    <p class="project-desc">Zero-day payload delivery system. Operates through encrypted proxy chains with sub-12ms response latency.</p>
+    <span class="project-arrow">→</span>
+  </div>
+  <div class="project-card">
+    <div class="project-tag">Recon</div>
+    <div class="project-name">WRAITH</div>
+    <p class="project-desc">Deep packet inspection module. Passive network fingerprinting across 40+ protocol layers.</p>
+    <span class="project-arrow">→</span>
+  </div>
+  <div class="project-card">
+    <div class="project-tag">Defense</div>
+    <div class="project-name">IRONWALL</div>
+    <p class="project-desc">Adaptive firewall AI. Learns, evolves, and neutralizes intrusion attempts in real-time.</p>
+    <span class="project-arrow">→</span>
+  </div>
+  <div class="project-card">
+    <div class="project-tag">Crypto</div>
+    <div class="project-name">CIPHER-X</div>
+    <p class="project-desc">Post-quantum encryption layer. 4096-bit asymmetric key pairs with forward secrecy enforcement.</p>
+    <span class="project-arrow">→</span>
+  </div>
+  <div class="project-card">
+    <div class="project-tag">OSINT</div>
+    <div class="project-name">SPECTRE</div>
+    <p class="project-desc">Automated open-source intelligence aggregator. Cross-references 200+ data sources silently.</p>
+    <span class="project-arrow">→</span>
+  </div>
+  <div class="project-card">
+    <div class="project-tag">Anon</div>
+    <div class="project-name">NULLROUTE</div>
+    <p class="project-desc">Identity obfuscation framework. Dynamic IP rotation through 80+ global onion nodes.</p>
+    <span class="project-arrow">→</span>
+  </div>
+</div>
+
+<footer id="contact">
+  <div>ALMEER © <span id="yr"></span> // ALL RIGHTS ENCRYPTED</div>
+  <div>LOCATION: <span>UNKNOWN</span> // IP: <span id="ip-spoof">███.███.██.███</span></div>
+  <div>SIGNAL: <span class="blink">▓▓▓▓▓</span> SECURE</div>
+</footer>
+
+<script>
+// ─── MATRIX RAIN ───────────────────────────────────────────────────────────
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+let cols, drops;
+
+function resizeMatrix() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  cols = Math.floor(canvas.width / 16);
+  drops = Array(cols).fill(1);
+}
+
+resizeMatrix();
+window.addEventListener('resize', resizeMatrix);
+
+const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF><{}[]|\\/_#@!%&';
+
+function drawMatrix() {
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#00ff41';
+  ctx.font = '14px Share Tech Mono, monospace';
+  for (let i = 0; i < cols; i++) {
+    const ch = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillStyle = Math.random() > 0.95 ? '#ffffff' : '#00ff41';
+    ctx.fillText(ch, i * 16, drops[i] * 16);
+    if (drops[i] * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  }
+}
+
+setInterval(drawMatrix, 50);
+
+// ─── TERMINAL TYPEWRITER ───────────────────────────────────────────────────
+const lines = [
+  { text: '> whoami',                         cls: 't-prompt t-cmd', delay: 400 },
+  { text: 'almeer // root',                   cls: 't-success',      delay: 200 },
+  { text: '',                                 cls: '',               delay: 100 },
+  { text: '> cat /etc/mission',               cls: 't-prompt t-cmd', delay: 500 },
+  { text: 'MISSION: penetrate, persist, prevail.', cls: 't-output', delay: 150 },
+  { text: 'CLEARANCE: OMEGA-9',               cls: 't-output',       delay: 100 },
+  { text: '',                                 cls: '',               delay: 100 },
+  { text: '> nmap -sS 192.168.0.0/24',        cls: 't-prompt t-cmd', delay: 600 },
+  { text: 'Starting ALMEER Nmap scan ...',    cls: 't-output',       delay: 200 },
+  { text: '[+] 192.168.0.1  — PORT 22/tcp  OPEN',  cls: 't-success', delay: 80 },
+  { text: '[+] 192.168.0.14 — PORT 443/tcp OPEN',  cls: 't-success', delay: 80 },
+  { text: '[!] 192.168.0.31 — PORT 8080/tcp OPEN', cls: 't-warn',    delay: 80 },
+  { text: '[x] 192.168.0.99 — FIREWALL DETECTED',  cls: 't-err',     delay: 80 },
+  { text: '',                                 cls: '',               delay: 100 },
+  { text: '> exploit --target 192.168.0.14 --payload phantom_v2', cls: 't-prompt t-cmd', delay: 800 },
+  { text: '[*] Injecting payload...',         cls: 't-output',       delay: 300 },
+  { text: '[*] Bypassing auth layer...',      cls: 't-output',       delay: 400 },
+  { text: '[✓] ROOT SHELL ACQUIRED',          cls: 't-success',      delay: 200 },
+  { text: '',                                 cls: '',               delay: 100 },
+  { text: '> _',                              cls: 't-prompt',       delay: 200 },
+];
+
+const termOut = document.getElementById('terminal-out');
+let lineIdx = 0, charIdx = 0;
+let currentEl = null;
+
+function typeNext() {
+  if (lineIdx >= lines.length) {
+    if (currentEl) currentEl.innerHTML += '<span class="t-cursor"></span>';
+    return;
+  }
+  const line = lines[lineIdx];
+  if (charIdx === 0) {
+    currentEl = document.createElement('span');
+    currentEl.className = 't-line ' + line.cls;
+    termOut.appendChild(currentEl);
+  }
+
+  if (charIdx < line.text.length) {
+    currentEl.textContent += line.text[charIdx];
+    charIdx++;
+    setTimeout(typeNext, line.text.length > 0 ? 28 + Math.random() * 30 : 0);
+  } else {
+    termOut.appendChild(document.createElement('br'));
+    lineIdx++; charIdx = 0;
+    const d = line.delay || 100;
+    setTimeout(typeNext, d);
+  }
+}
+
+// ─── STATS COUNTER ─────────────────────────────────────────────────────────
+function countUp(el, end, dur) {
+  let start = 0, step = Math.ceil(end / (dur / 50));
+  const t = setInterval(() => {
+    start = Math.min(start + step, end);
+    el.textContent = String(start).padStart(3, '0');
+    if (start >= end) clearInterval(t);
+  }, 50);
+}
+
+// ─── SCROLL REVEAL ─────────────────────────────────────────────────────────
+const reveals = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('revealed');
+      if (e.target === document.querySelector('.terminal')) {
+        setTimeout(typeNext, 300);
+      }
+      if (e.target === document.querySelector('.stats')) {
+        countUp(document.getElementById('s1'), 247, 1400);
+        countUp(document.getElementById('s3'), 038, 1200);
+      }
+    }
+  });
+}, { threshold: 0.15 });
+
+reveals.forEach(r => io.observe(r));
+
+// ─── ACCESS BUTTON ─────────────────────────────────────────────────────────
+function triggerAccess() {
+  const btn = document.querySelector('.btn-access');
+  const messages = [
+    'AUTHENTICATING...', 'VERIFYING CLEARANCE...', 'BYPASSING FIREWALL...',
+    'DECRYPTING TOKEN...', 'ACCESS GRANTED ✓'
+  ];
+  let i = 0;
+  btn.disabled = true;
+  btn.style.background = '#ffb300';
+  const iv = setInterval(() => {
+    btn.textContent = messages[i++];
+    if (i >= messages.length) {
+      clearInterval(iv);
+      btn.style.background = 'var(--green)';
+      btn.style.color = '#000';
+      setTimeout(() => {
+        btn.textContent = 'REQUEST ACCESS';
+        btn.disabled = false;
+      }, 2000);
+    }
+  }, 450);
+}
+
+// ─── MISC ───────────────────────────────────────────────────────────────────
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+const ipChars = '0123456789';
+setInterval(() => {
+  const el = document.getElementById('ip-spoof');
+  if (Math.random() > 0.85) {
+    el.textContent = Array.from({length:4}, () =>
+      Math.floor(Math.random()*256).toString().padStart(3,'0')
+    ).join('.');
+  }
+}, 1500);
+
+// Konami easter egg
+let kseq = [], code = [38,38,40,40,37,39,37,39,66,65];
+document.addEventListener('keydown', e => {
+  kseq.push(e.keyCode);
+  if (kseq.length > 10) kseq.shift();
+  if (kseq.join() === code.join()) {
+    document.body.style.filter = 'hue-rotate(90deg)';
+    setTimeout(() => document.body.style.filter = '', 3000);
+  }
+});
+</script>
+</body>
+</html>
